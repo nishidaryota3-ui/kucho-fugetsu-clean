@@ -20,10 +20,11 @@ body, html {
     padding-bottom: 5px; flex-shrink: 0;
 }
 
-/* 🖋️ ステップ1：入力専用エリア */
+/* 🖋️ ステップ1：入力専用エリア（上部へ配置） */
 .input-screen-content {
     flex: 1; width: 100%; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; gap: 20px;
+    justify-content: flex-start; align-items: center; gap: 20px;
+    padding-top: 25px;
 }
 
 .input-dock {
@@ -59,41 +60,52 @@ body, html {
 }
 .text-input:focus { border-color: #2b2b2b; background: #fff; }
 
-/* 👁️ ステップ3：プレビュー枠（完全中央配置・安全マージン適用） */
+/* 👁️ ステップ3：プレビュー枠（完全中央配置・安全ガード） */
 .preview-container {
     position: relative; width: 100%; flex: 1;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    overflow: hidden; padding: 0; margin: 10px 0;
+    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+    overflow: hidden; padding: 0; margin: 5px 0;
 }
 
+/* 2段構造のヘッダー */
 .preview-header-area {
-    position: absolute; top: 0; left: 0; right: 0;
-    display: flex; justify-content: space-between; align-items: flex-start;
-    padding: 0 5px; pointer-events: none; z-index: 5;
+    width: 100%; display: flex; flex-direction: column; gap: 6px;
+    padding: 0 5px; pointer-events: none; z-index: 5; flex-shrink: 0;
 }
+
+.header-row-top { display: flex; justify-content: flex-start; width: 100%; }
+.header-row-bottom { display: flex; justify-content: flex-end; width: 100%; }
 
 .preview-breadcrumb {
     font-size: 0.8rem; color: #666666; letter-spacing: 0.05em; 
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.3rem;
-    max-width: 65%;
+    text-align: left;
 }
 .preview-breadcrumb span.separator { color: #b5b5b5; font-family: sans-serif; }
 
 .preview-author-tag {
     font-size: 0.95rem; color: #2b2b2b; letter-spacing: 0.1em; font-weight: 500;
-    white-space: nowrap;
+    white-space: nowrap; text-align: right;
+}
+
+.preview-text-wrapper {
+    flex: 1; width: 100%; display: flex; justify-content: center; align-items: center;
+    overflow: hidden; padding: 10px 0;
 }
 
 .preview-text-preview {
     writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl;
     font-family: inherit; line-height: 1.0; letter-spacing: 0.25em;
     font-weight: 500; color: #2b2b2b; white-space: nowrap !important; text-align: center;
-    max-height: 42vh; display: block; margin: auto;
+    max-height: 100%; display: block; margin: auto;
 }
 
-/* 📱 スマホ（縦幅が狭い端末）専用レスポンシブ調整 */
-@media screen and (max-height: 700px) {
-    .preview-text-preview { max-height: 36vh; }
+/* 📱 横画面（Landscape）対応：スクロール許可と最適化 */
+@media screen and (orientation: landscape) {
+    body, html { overflow: auto; }
+    .step-screen { position: relative; height: auto; min-height: 100vh; overflow-y: auto; }
+    .preview-container { min-height: 250px; }
+    .preview-text-preview { max-height: 200px; }
 }
 
 /* 🔘 ボタンデザイン */
