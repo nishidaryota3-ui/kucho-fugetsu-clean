@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>おみ句じ句帳-風月</title>
+
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#faf9f6">
+
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('sw.js').catch(function(err) {
+            console.log('SW registration failed: ', err);
+          });
+        });
+      }
+    </script>
+
+    <!-- 🎨 分割したデザインファイルを読み込み -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ── STEP 1：入力専用画面 ── -->
+    <div id="step1" class="step-screen active">
+        <div class="step-title">【1/3】 句を詠む</div>
+        
+        <div class="input-screen-content">
+            <div class="input-dock">
+                <input type="text" id="inputPhrase" class="dock-input" placeholder="ここをタップして俳句を入力..." autofocus>
+                <div class="btn-group" style="margin-top: 8px;">
+                    <button class="btn" style="width: 100%;" onclick="goToStep2()">次へ 進む ＞</button>
+                </div>
+            </div>
+        </div>
+
+        <div></div>
+    </div>
+
+    <!-- ── STEP 2：季語確認・手動訂正画面 ── -->
+    <div id="step2" class="step-screen">
+        <div class="step-title">【2/3】 季語の確認</div>
+        
+        <div class="step2-content">
+            <div class="kigo-check-card">
+                <div class="kigo-prompt">
+                    自動抽出された季語：<br>
+                    <span id="detectedKigoText">解析中...</span><br>
+                    これでよろしいですか？
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">季語</label>
+                    <input type="text" id="kigoInput" class="text-input" placeholder="例：古池" onchange="checkAndHokanKigoData()">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">季節</label>
+                    <select id="seasonSelect" class="text-input">
+                        <option value="haru">春</option>
+                        <option value="natsu">夏</option>
+                        <option value="aki">秋</option>
+                        <option value="huyu">冬</option>
+                        <option value="shinnen">新年</option>
+                        <option value="muki">無季</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">詳細季節（任意）</label>
+                    <input type="text" id="detailSeasonInput" class="text-input" placeholder="例：三夏、初夏など">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">作者名</label>
+                    <input type="text" id="authorInput" class="text-input" value="西田亮太">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">作者よみがな</label>
+                    <input type="text" id="authorKanaInput" class="text-input" value="にしだりょうた">
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-outline" onclick="goToStep(1)">＜ 戻る</button>
+            <button class="btn" onclick="goToStep3()">プレビューへ ＞</button>
+        </div>
+    </div>
+
+    <!-- ── STEP 3：プレビュー画面 ── -->
+    <div id="step3" class="step-screen">
+        <div class="preview-container">
+            <div class="preview-header-area">
+                <div id="previewBreadcrumb" class="preview-breadcrumb">
+                    <span>home</span>
+                    <span class="separator">&lt;</span>
+                    <span>季寄せ</span>
+                    <span class="separator">&lt;</span>
+                    <span id="bcSeason">夏</span>
+                    <span class="separator">&lt;</span>
+                    <span id="bcKigo" style="font-weight: bold;">蛙（三夏）</span>
+                </div>
+                <div id="previewAuthor" class="preview-author-tag"></div>
+            </div>
+
+            <p id="previewPhrase" class="preview-text-preview"></p>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-outline" onclick="goToStep(2)">＜ 修正</button>
+            <button id="submitBtn" class="btn" onclick="submitHaiku()">登録</button>
+        </div>
+    </div>
+
+    <!-- ── STEP 4：完了画面 ── -->
+    <div id="step4" class="step-screen" style="justify-content: center;">
+        <div style="text-align: center; line-height: 2;">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">🍃</div>
+            <h2 style="font-weight: 500; font-size: 1.3rem;">登録が完了しました</h2>
+            <p style="color: #777; font-size: 0.85rem; margin-top: 0.5rem;">スプレッドシートへ無事保存されました。<br>「おみ句じ ＆ 季寄せ」アプリにも即座に反映されます。</p>
+            
+            <div class="btn-group" style="margin-top: 2.5rem; max-width: 250px; margin-left: auto; margin-right: auto;">
+                <button class="btn" onclick="resetForm()">続けて次の句を詠む</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚙️ 分割したプログラムファイルを読み込み -->
+    <script src="app.js"></script>
+</body>
+</html>
