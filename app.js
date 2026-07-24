@@ -3,6 +3,8 @@ var SPREADSHEET_ID = '1m0y8AOJNx1Ad4I44poPheQAQNki1-QQIwi9wSw8jaBg';
 
 var kigoDatabase = [];
 var existingPhrases = []; 
+var existingAuthors = []; // 作者名重複チェック用データセット
+
 var autoDetectedParentKigo = '';
 var autoDetectedKigoKana = '';
 
@@ -29,7 +31,7 @@ window.onload = function() {
 
         var scriptPhrases = document.createElement('script');
         var sheet1Name = encodeURIComponent('シート1');
-        scriptPhrases.src = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?sheet=' + sheet1Name + '&range=A:A&tqx=responseHandler:phrasesDataReceived';
+        scriptPhrases.src = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID + '/gviz/tq?sheet=' + sheet1Name + '&range=A:C&tqx=responseHandler:phrasesDataReceived';
         document.body.appendChild(scriptPhrases);
     } catch (e) { console.error(e); }
 };
@@ -73,22 +75,53 @@ function phrasesDataReceived(data) {
     try {
         if (!data || !data.table || !data.table.rows) return;
         var rows = data.table.rows;
+        var authorMap = {};
+
         for (var i = 0; i < rows.length; i++) {
             var c = rows[i].c;
-            if (c && c[0] && c[0].v) {
+            if (!c) continue;
+
+            if (c[0] && c[0].v) {
                 var phraseStr = String(c[0].v).trim();
                 if (phraseStr && phraseStr !== '句') existingPhrases.push(phraseStr);
+            }
+
+            var authorName = c[1] && c[1].v ? String(c[1].v).trim() : '';
+            var authorKana = c[2] && c[2].v ? String(c[2].v).trim() : '';
+
+            if (authorName && authorName !== '作者名' && authorName !== '作者') {
+                if (!authorMap[authorName]) {
+                    authorMap[authorName] = authorKana;
+                }
+            }
+        }
+
+        var nameDatalist = document.getElementById('authorList');
+        var kanaDatalist = document.getElementById('authorKanaList');
+        
+        for (var name in authorMap) {
+            existingAuthors.push({ name: name, kana: authorMap[name] });
+            
+            if (nameDatalist) {
+                var opt = document.createElement('option');
+                opt.value = name;
+                nameDatalist.appendChild(opt);
+            }
+            if (kanaDatalist && authorMap[name]) {
+                var optK = document.createElement('option');
+                optK.value = authorMap[name];
+                kanaDatalist.appendChild(optK);
             }
         }
     } catch (e) { console.error(e); }
 }
 
-// 🔍 完全安全な文字列類似度（80%一致率）判定ロジック
+// 🔍 文字列類似度（レーベンシュタイン距離）判定
 function getSimilarityRatio(str1, str2) {
     try {
         if (!str1 || !str2) return 0;
-        var s1 = String(str1).replace(/[\s　、。,.・]/g, '');
-        var s2 = String(str2).replace(/[\s　、。,.・]/g, '');
+        var s1 = String(str1).replace(/[\s 、。,.・]/g, '');
+        var s2 = String(str2).replace(/[\s 、。,.・]/g, '');
         if (s1 === s2) return 1.0;
 
         var len1 = s1.length;
@@ -96,12 +129,8 @@ function getSimilarityRatio(str1, str2) {
         if (len1 === 0 || len2 === 0) return 0;
 
         var matrix = [];
-        for (var i = 0; i <= len1; i++) {
-            matrix[i] = [i];
-        }
-        for (var j = 0; j <= len2; j++) {
-            matrix[0][j] = j;
-        }
+        for (var i = 0; i <= len1; i++) matrix[i] = [i];
+        for (var j = 0; j <= len2; j++) matrix[0][j] = j;
 
         for (var i = 1; i <= len1; i++) {
             for (var j = 1; j <= len2; j++) {
@@ -119,6 +148,21 @@ function getSimilarityRatio(str1, str2) {
         return (maxLen - distance) / maxLen;
     } catch (e) {
         return 0;
+    }
+}
+
+// 作者名変更時に「よみがな」を自動挿入
+function onAuthorNameChange() {
+    var val = document.getElementById('authorInput').value.trim();
+    if (!val || existingAuthors.length === 0) return;
+
+    for (var i = 0; i < existingAuthors.length; i++) {
+        if (existingAuthors[i].name === val) {
+            if (existingAuthors[i].kana) {
+                document.getElementById('authorKanaInput').value = existingAuthors[i].kana;
+            }
+            break;
+        }
     }
 }
 
@@ -250,8 +294,50 @@ function goToStep3() {
         checkAndHokanKigoData();
 
         var inputKigo = document.getElementById('kigoInput').value.trim();
-        currentHaikuData.author = document.getElementById('authorInput').value.trim() || '西田亮太';
-        currentHaikuData.authorKana = document.getElementById('authorKanaInput').value.trim() || 'にしだりょうた';
+        var authorVal = document.getElementById('authorInput').value.trim() || '西田亮太';
+        
+        // カタカナをひらがなに統一 ＆ スペース除去クレンジング
+        var kanaVal = document.getElementById('authorKanaInput').value.trim() || 'にしだりょうた';
+        kanaVal = kanaVal.replace(/[\u30a1-\u30f6]/g, function(match) {
+            return String.fromCharCode(match.charCodeAt(0) - 0x60);
+        }).replace(/[\s ]/g, '');
+
+        // 👤 作者名の類似（表記揺れ・誤字）チェック
+        if (existingAuthors && existingAuthors.length > 0) {
+            var isExactMatch = false;
+            var similarAuthor = null;
+            var maxAuthorRatio = 0;
+
+            for (var a = 0; a < existingAuthors.length; a++) {
+                var item = existingAuthors[a];
+                if (item.name === authorVal) {
+                    isExactMatch = true;
+                    break;
+                }
+                var ratioName = getSimilarityRatio(authorVal, item.name);
+                var ratioKana = getSimilarityRatio(kanaVal, item.kana);
+                var maxR = Math.max(ratioName, ratioKana);
+
+                if (maxR > maxAuthorRatio) {
+                    maxAuthorRatio = maxR;
+                    similarAuthor = item;
+                }
+            }
+
+            if (!isExactMatch && similarAuthor && maxAuthorRatio >= 0.7) {
+                var authorConfirm = '【作者名の重複登録注意】\n\n入力された作者名「' + authorVal + '（' + kanaVal + '）」は、既存の登録作者「' + similarAuthor.name + '（' + similarAuthor.kana + '）」と類似しています。\n\n既存の作者名【 ' + similarAuthor.name + ' 】に変更して進みますか？\n\n・[OK] ➔ 既存の「' + similarAuthor.name + '」に変更する\n・[キャンセル] ➔ 入力した「' + authorVal + '」のまま進む';
+                
+                if (confirm(authorConfirm)) {
+                    authorVal = similarAuthor.name;
+                    kanaVal = similarAuthor.kana || kanaVal;
+                    document.getElementById('authorInput').value = authorVal;
+                    document.getElementById('authorKanaInput').value = kanaVal;
+                }
+            }
+        }
+
+        currentHaikuData.author = authorVal;
+        currentHaikuData.authorKana = kanaVal;
         
         if (inputKigo === '') {
             currentHaikuData.kigo = '無季';
@@ -283,32 +369,52 @@ function goToStep3() {
             }
         }
 
+        // プレビューテキスト設定
         var pEl = document.getElementById('previewPhrase');
         pEl.innerText = currentHaikuData.phrase;
 
-        var len = currentHaikuData.phrase.length;
-        var isSmallScreen = (window.innerHeight <= 700);
-
-        if (len <= 15) {
-            pEl.style.fontSize = isSmallScreen ? '1.4rem' : '1.7rem';
-        } else if (len <= 20) {
-            pEl.style.fontSize = isSmallScreen ? '1.15rem' : '1.35rem';
-        } else if (len <= 25) {
-            pEl.style.fontSize = isSmallScreen ? '0.92rem' : '1.05rem';
+        document.getElementById('previewAuthor').innerText = currentHaikuData.author;
+        
+        // 🥖 パンくず表示（無季の場合は「home < 季寄せ < 無季」とだけ表示）
+        var bcEl = document.getElementById('previewBreadcrumb');
+        if (currentHaikuData.season === 'muki' || currentHaikuData.kigo === '無季') {
+            bcEl.innerHTML = '<span>home</span><span class="separator">&lt;</span><span>季寄せ</span><span class="separator">&lt;</span><span style="font-weight: bold;">無季</span>';
         } else {
-            pEl.style.fontSize = isSmallScreen ? '0.78rem' : '0.88rem';
+            var seasonJa = seasonMapToJa[currentHaikuData.season] || '無季';
+            var kigoLabel = currentHaikuData.kigo + (currentHaikuData.detailSeason ? '（' + currentHaikuData.detailSeason + '）' : '');
+            bcEl.innerHTML = '<span>home</span><span class="separator">&lt;</span><span>季寄せ</span><span class="separator">&lt;</span><span>' + seasonJa + '</span><span class="separator">&lt;</span><span style="font-weight: bold;">' + kigoLabel + '</span>';
         }
 
-        document.getElementById('previewAuthor').innerText = currentHaikuData.author;
-        document.getElementById('bcSeason').innerText = seasonMapToJa[currentHaikuData.season] || '無季';
-        
-        var kigoLabel = currentHaikuData.kigo + (currentHaikuData.detailSeason ? '（' + currentHaikuData.detailSeason + '）' : '');
-        document.getElementById('bcKigo').innerText = kigoLabel;
+        goToStep(3);
+
+        // 📏 文字溢れ防止の動的フォントサイズ調整（描画確定後に計算）
+        setTimeout(function() {
+            adjustPreviewFontSize();
+        }, 50);
+
     } catch (e) {
         console.error(e);
+        goToStep(3);
     }
+}
 
-    goToStep(3);
+// 文字数・描画高度に合わせフォントサイズを動的調整する関数
+function adjustPreviewFontSize() {
+    var pEl = document.getElementById('previewPhrase');
+    var container = document.querySelector('.preview-text-wrapper');
+    if (!pEl || !container) return;
+
+    var maxH = container.clientHeight - 10;
+    if (maxH <= 0) return;
+
+    var fontSize = 1.8; // スタート値 (rem)
+    pEl.style.fontSize = fontSize + 'rem';
+
+    // コンテナ縦幅を超えている間、少しずつ小さくする
+    while (pEl.offsetHeight > maxH && fontSize > 0.6) {
+        fontSize -= 0.05;
+        pEl.style.fontSize = fontSize + 'rem';
+    }
 }
 
 function submitHaiku() {
