@@ -41,7 +41,7 @@
             </div>
         </div>
 
-        <div></div>
+        <div class="bottom-spacer"></div>
     </div>
 
     <!-- ── STEP 2：季語確認・手動訂正画面 ── -->
@@ -79,14 +79,14 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">作者名</label>
-                    <input type="text" id="authorInput" class="text-input" value="西田亮太" list="authorList" onchange="onAuthorNameChange()">
+                    <label class="form-label">作者名（ひらがなでも検索可能）</label>
+                    <input type="text" id="authorInput" class="text-input" value="西田亮太" list="authorList" oninput="onAuthorInputChanged()" onchange="onAuthorNameChange()">
                     <datalist id="authorList"></datalist>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">作者よみがな</label>
-                    <input type="text" id="authorKanaInput" class="text-input" value="にしだりょうた" list="authorKanaList">
+                    <input type="text" id="authorKanaInput" class="text-input" value="にしだりょうた" list="authorKanaList" oninput="onAuthorKanaInputChanged()">
                     <datalist id="authorKanaList"></datalist>
                 </div>
             </div>
@@ -101,7 +101,7 @@
     <!-- ── STEP 3：プレビュー画面 ── -->
     <div id="step3" class="step-screen">
         <div class="preview-container">
-            <!-- 上下2段のヘッダー領域 -->
+            <!-- 上下2段構造のヘッダー -->
             <div class="preview-header-area">
                 <div class="header-row-top">
                     <div id="previewBreadcrumb" class="preview-breadcrumb"></div>
@@ -111,7 +111,8 @@
                 </div>
             </div>
 
-            <div class="preview-text-wrapper">
+            <!-- 縦書き表示領域 -->
+            <div class="preview-text-wrapper" id="previewTextWrapper">
                 <p id="previewPhrase" class="preview-text-preview"></p>
             </div>
         </div>
