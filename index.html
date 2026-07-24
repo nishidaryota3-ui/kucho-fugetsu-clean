@@ -80,12 +80,14 @@
                 
                 <div class="form-group">
                     <label class="form-label">作者名</label>
-                    <input type="text" id="authorInput" class="text-input" value="西田亮太">
+                    <input type="text" id="authorInput" class="text-input" value="西田亮太" list="authorList" onchange="onAuthorNameChange()">
+                    <datalist id="authorList"></datalist>
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">作者よみがな</label>
-                    <input type="text" id="authorKanaInput" class="text-input" value="にしだりょうた">
+                    <input type="text" id="authorKanaInput" class="text-input" value="にしだりょうた" list="authorKanaList">
+                    <datalist id="authorKanaList"></datalist>
                 </div>
             </div>
         </div>
@@ -99,20 +101,19 @@
     <!-- ── STEP 3：プレビュー画面 ── -->
     <div id="step3" class="step-screen">
         <div class="preview-container">
+            <!-- 上下2段のヘッダー領域 -->
             <div class="preview-header-area">
-                <div id="previewBreadcrumb" class="preview-breadcrumb">
-                    <span>home</span>
-                    <span class="separator">&lt;</span>
-                    <span>季寄せ</span>
-                    <span class="separator">&lt;</span>
-                    <span id="bcSeason">夏</span>
-                    <span class="separator">&lt;</span>
-                    <span id="bcKigo" style="font-weight: bold;">蛙（三夏）</span>
+                <div class="header-row-top">
+                    <div id="previewBreadcrumb" class="preview-breadcrumb"></div>
                 </div>
-                <div id="previewAuthor" class="preview-author-tag"></div>
+                <div class="header-row-bottom">
+                    <div id="previewAuthor" class="preview-author-tag"></div>
+                </div>
             </div>
 
-            <p id="previewPhrase" class="preview-text-preview"></p>
+            <div class="preview-text-wrapper">
+                <p id="previewPhrase" class="preview-text-preview"></p>
+            </div>
         </div>
 
         <div class="btn-group">
