@@ -3,7 +3,7 @@ var SPREADSHEET_ID = '1m0y8AOJNx1Ad4I44poPheQAQNki1-QQIwi9wSw8jaBg';
 
 var kigoDatabase = [];
 var existingPhrases = []; 
-var existingAuthors = []; // 作者名重複チェック用データセット
+var existingAuthors = []; // 作者名重複・サジェスト用データセット
 
 var autoDetectedParentKigo = '';
 var autoDetectedKigoKana = '';
@@ -100,20 +100,36 @@ function phrasesDataReceived(data) {
         var kanaDatalist = document.getElementById('authorKanaList');
         
         for (var name in authorMap) {
-            existingAuthors.push({ name: name, kana: authorMap[name] });
+            var kana = authorMap[name];
+            existingAuthors.push({ name: name, kana: kana });
             
             if (nameDatalist) {
+                // 漢字名と「漢字（よみがな）」の両方を候補に登録（ひらがな検索用）
                 var opt = document.createElement('option');
                 opt.value = name;
                 nameDatalist.appendChild(opt);
+
+                if (kana) {
+                    var optCombo = document.createElement('option');
+                    optCombo.value = name + ' (' + kana + ')';
+                    nameDatalist.appendChild(optCombo);
+                }
             }
-            if (kanaDatalist && authorMap[name]) {
+            if (kanaDatalist && kana) {
                 var optK = document.createElement('option');
-                optK.value = authorMap[name];
+                optK.value = kana;
                 kanaDatalist.appendChild(optK);
             }
         }
     } catch (e) { console.error(e); }
+}
+
+// カタカナ ➔ ひらがな変換
+function toHiragana(str) {
+    if (!str) return '';
+    return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+        return String.fromCharCode(match.charCodeAt(0) - 0x60);
+    }).replace(/[\s ]/g, '');
 }
 
 // 🔍 文字列類似度（レーベンシュタイン距離）判定
@@ -148,6 +164,32 @@ function getSimilarityRatio(str1, str2) {
         return (maxLen - distance) / maxLen;
     } catch (e) {
         return 0;
+    }
+}
+
+// ひらがな入力で「漢字（よみがな）」が選ばれた際の自動クレンジング
+function onAuthorInputChanged() {
+    var input = document.getElementById('authorInput');
+    var val = input.value.trim();
+    if (val.indexOf('(') !== -1) {
+        var cleanName = val.split('(')[0].trim();
+        input.value = cleanName;
+        onAuthorNameChange();
+    }
+}
+
+// よみがなが入力された時、対応する正しい漢字作者名を自動補正セット
+function onAuthorKanaInputChanged() {
+    var kanaInput = document.getElementById('authorKanaInput');
+    var hiraVal = toHiragana(kanaInput.value);
+    
+    if (!hiraVal || existingAuthors.length === 0) return;
+
+    for (var i = 0; i < existingAuthors.length; i++) {
+        if (toHiragana(existingAuthors[i].kana) === hiraVal) {
+            document.getElementById('authorInput').value = existingAuthors[i].name;
+            break;
+        }
     }
 }
 
@@ -295,14 +337,9 @@ function goToStep3() {
 
         var inputKigo = document.getElementById('kigoInput').value.trim();
         var authorVal = document.getElementById('authorInput').value.trim() || '西田亮太';
-        
-        // カタカナをひらがなに統一 ＆ スペース除去クレンジング
-        var kanaVal = document.getElementById('authorKanaInput').value.trim() || 'にしだりょうた';
-        kanaVal = kanaVal.replace(/[\u30a1-\u30f6]/g, function(match) {
-            return String.fromCharCode(match.charCodeAt(0) - 0x60);
-        }).replace(/[\s ]/g, '');
+        var kanaVal = toHiragana(document.getElementById('authorKanaInput').value) || 'にしだりょうた';
 
-        // 👤 作者名の類似（表記揺れ・誤字）チェック
+        // 👤 作者名の異体字・漢字違い・表記揺れチェック
         if (existingAuthors && existingAuthors.length > 0) {
             var isExactMatch = false;
             var similarAuthor = null;
@@ -315,7 +352,7 @@ function goToStep3() {
                     break;
                 }
                 var ratioName = getSimilarityRatio(authorVal, item.name);
-                var ratioKana = getSimilarityRatio(kanaVal, item.kana);
+                var ratioKana = getSimilarityRatio(kanaVal, toHiragana(item.kana));
                 var maxR = Math.max(ratioName, ratioKana);
 
                 if (maxR > maxAuthorRatio) {
@@ -325,11 +362,11 @@ function goToStep3() {
             }
 
             if (!isExactMatch && similarAuthor && maxAuthorRatio >= 0.7) {
-                var authorConfirm = '【作者名の重複登録注意】\n\n入力された作者名「' + authorVal + '（' + kanaVal + '）」は、既存の登録作者「' + similarAuthor.name + '（' + similarAuthor.kana + '）」と類似しています。\n\n既存の作者名【 ' + similarAuthor.name + ' 】に変更して進みますか？\n\n・[OK] ➔ 既存の「' + similarAuthor.name + '」に変更する\n・[キャンセル] ➔ 入力した「' + authorVal + '」のまま進む';
+                var authorConfirm = '【作者名の確認】\n\n入力された「' + authorVal + '」は、既存の登録作者「' + similarAuthor.name + '（' + similarAuthor.kana + '）」と類似しています。\n\n既存の【 ' + similarAuthor.name + ' 】に変更して進みますか？\n\n・[OK] ➔ 既存の「' + similarAuthor.name + '」に変更する\n・[キャンセル] ➔ 入力通りの「' + authorVal + '」で進む';
                 
                 if (confirm(authorConfirm)) {
                     authorVal = similarAuthor.name;
-                    kanaVal = similarAuthor.kana || kanaVal;
+                    kanaVal = toHiragana(similarAuthor.kana) || kanaVal;
                     document.getElementById('authorInput').value = authorVal;
                     document.getElementById('authorKanaInput').value = kanaVal;
                 }
@@ -375,7 +412,7 @@ function goToStep3() {
 
         document.getElementById('previewAuthor').innerText = currentHaikuData.author;
         
-        // 🥖 パンくず表示（無季の場合は「home < 季寄せ < 無季」とだけ表示）
+        // 🥖 パンくず表示（無季の場合は「home < 季寄せ < 無季」とシンプル化）
         var bcEl = document.getElementById('previewBreadcrumb');
         if (currentHaikuData.season === 'muki' || currentHaikuData.kigo === '無季') {
             bcEl.innerHTML = '<span>home</span><span class="separator">&lt;</span><span>季寄せ</span><span class="separator">&lt;</span><span style="font-weight: bold;">無季</span>';
@@ -387,10 +424,10 @@ function goToStep3() {
 
         goToStep(3);
 
-        // 📏 文字溢れ防止の動的フォントサイズ調整（描画確定後に計算）
+        // 📏 縦書きテキストが領域内に100%収まるよう高さを厳密計算して自動動的縮小
         setTimeout(function() {
             adjustPreviewFontSize();
-        }, 50);
+        }, 60);
 
     } catch (e) {
         console.error(e);
@@ -398,22 +435,25 @@ function goToStep3() {
     }
 }
 
-// 文字数・描画高度に合わせフォントサイズを動的調整する関数
+// 縦書き専用の高度判定＆収容アルゴリズム
 function adjustPreviewFontSize() {
     var pEl = document.getElementById('previewPhrase');
-    var container = document.querySelector('.preview-text-wrapper');
-    if (!pEl || !container) return;
+    var wrapper = document.getElementById('previewTextWrapper');
+    if (!pEl || !wrapper) return;
 
-    var maxH = container.clientHeight - 10;
+    // 親要素のリアルな高さ（ピクセル）を取得
+    var maxH = wrapper.clientHeight - 20; 
     if (maxH <= 0) return;
 
-    var fontSize = 1.8; // スタート値 (rem)
+    var fontSize = 2.0; // 開始フォントサイズ (rem)
     pEl.style.fontSize = fontSize + 'rem';
 
-    // コンテナ縦幅を超えている間、少しずつ小さくする
-    while (pEl.offsetHeight > maxH && fontSize > 0.6) {
+    // 縦書き要素の実高度（getBoundingClientRect）が親枠を超える間、0.05remずつピタッと縮小
+    var currentH = pEl.getBoundingClientRect().height;
+    while (currentH > maxH && fontSize > 0.5) {
         fontSize -= 0.05;
         pEl.style.fontSize = fontSize + 'rem';
+        currentH = pEl.getBoundingClientRect().height;
     }
 }
 
