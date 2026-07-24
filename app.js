@@ -104,7 +104,6 @@ function phrasesDataReceived(data) {
             existingAuthors.push({ name: name, kana: kana });
             
             if (nameDatalist) {
-                // 漢字名と「漢字（よみがな）」の両方を候補に登録（ひらがな検索用）
                 var opt = document.createElement('option');
                 opt.value = name;
                 nameDatalist.appendChild(opt);
@@ -167,7 +166,6 @@ function getSimilarityRatio(str1, str2) {
     }
 }
 
-// ひらがな入力で「漢字（よみがな）」が選ばれた際の自動クレンジング
 function onAuthorInputChanged() {
     var input = document.getElementById('authorInput');
     var val = input.value.trim();
@@ -178,7 +176,6 @@ function onAuthorInputChanged() {
     }
 }
 
-// よみがなが入力された時、対応する正しい漢字作者名を自動補正セット
 function onAuthorKanaInputChanged() {
     var kanaInput = document.getElementById('authorKanaInput');
     var hiraVal = toHiragana(kanaInput.value);
@@ -193,7 +190,6 @@ function onAuthorKanaInputChanged() {
     }
 }
 
-// 作者名変更時に「よみがな」を自動挿入
 function onAuthorNameChange() {
     var val = document.getElementById('authorInput').value.trim();
     if (!val || existingAuthors.length === 0) return;
@@ -339,7 +335,6 @@ function goToStep3() {
         var authorVal = document.getElementById('authorInput').value.trim() || '西田亮太';
         var kanaVal = toHiragana(document.getElementById('authorKanaInput').value) || 'にしだりょうた';
 
-        // 👤 作者名の異体字・漢字違い・表記揺れチェック
         if (existingAuthors && existingAuthors.length > 0) {
             var isExactMatch = false;
             var similarAuthor = null;
@@ -406,13 +401,11 @@ function goToStep3() {
             }
         }
 
-        // プレビューテキスト設定
         var pEl = document.getElementById('previewPhrase');
         pEl.innerText = currentHaikuData.phrase;
 
         document.getElementById('previewAuthor').innerText = currentHaikuData.author;
         
-        // 🥖 パンくず表示（無季の場合は「home < 季寄せ < 無季」とシンプル化）
         var bcEl = document.getElementById('previewBreadcrumb');
         if (currentHaikuData.season === 'muki' || currentHaikuData.kigo === '無季') {
             bcEl.innerHTML = '<span>home</span><span class="separator">&lt;</span><span>季寄せ</span><span class="separator">&lt;</span><span style="font-weight: bold;">無季</span>';
@@ -424,7 +417,6 @@ function goToStep3() {
 
         goToStep(3);
 
-        // 📏 縦書きテキストが領域内に100%収まるよう高さを厳密計算して自動動的縮小
         setTimeout(function() {
             adjustPreviewFontSize();
         }, 60);
@@ -435,20 +427,17 @@ function goToStep3() {
     }
 }
 
-// 縦書き専用の高度判定＆収容アルゴリズム
 function adjustPreviewFontSize() {
     var pEl = document.getElementById('previewPhrase');
     var wrapper = document.getElementById('previewTextWrapper');
     if (!pEl || !wrapper) return;
 
-    // 親要素のリアルな高さ（ピクセル）を取得
     var maxH = wrapper.clientHeight - 20; 
     if (maxH <= 0) return;
 
-    var fontSize = 2.0; // 開始フォントサイズ (rem)
+    var fontSize = 2.0; 
     pEl.style.fontSize = fontSize + 'rem';
 
-    // 縦書き要素の実高度（getBoundingClientRect）が親枠を超える間、0.05remずつピタッと縮小
     var currentH = pEl.getBoundingClientRect().height;
     while (currentH > maxH && fontSize > 0.5) {
         fontSize -= 0.05;
