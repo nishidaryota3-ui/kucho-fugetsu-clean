@@ -20,21 +20,23 @@ body, html {
     padding-bottom: 5px; flex-shrink: 0;
 }
 
-/* 🖋️ ステップ1：入力専用エリア（上部へ配置） */
+/* 🖋️ ステップ1：上品な画面中央配置 ＆ キーボード退避構造 */
 .input-screen-content {
     flex: 1; width: 100%; display: flex; flex-direction: column;
-    justify-content: flex-start; align-items: center; gap: 20px;
-    padding-top: 25px;
+    justify-content: center; align-items: center; gap: 20px;
+    padding-bottom: 40px; /* 視覚的に心地よいやや上部の中央バランス */
 }
+
+.bottom-spacer { flex-shrink: 0; height: 1px; }
 
 .input-dock {
     width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px;
     background: #ffffff; border: 1px solid #eae8e3; border-radius: 12px;
-    padding: 18px 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    padding: 22px 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.04);
 }
 
 .dock-input {
-    width: 100%; border: none; outline: none; font-size: 1.1rem;
+    width: 100%; border: none; outline: none; font-size: 1.15rem;
     font-family: inherit; background: transparent; color: #2b2b2b;
     padding: 8px 0; border-bottom: 1px solid #ddd;
 }
@@ -60,14 +62,14 @@ body, html {
 }
 .text-input:focus { border-color: #2b2b2b; background: #fff; }
 
-/* 👁️ ステップ3：プレビュー枠（完全中央配置・安全ガード） */
+/* 👁️ ステップ3：プレビュー枠（完全収容・縦書き厳密計算） */
 .preview-container {
     position: relative; width: 100%; flex: 1;
     display: flex; flex-direction: column; justify-content: space-between; align-items: center;
     overflow: hidden; padding: 0; margin: 5px 0;
 }
 
-/* 2段構造のヘッダー */
+/* 上下2段のヘッダー */
 .preview-header-area {
     width: 100%; display: flex; flex-direction: column; gap: 6px;
     padding: 0 5px; pointer-events: none; z-index: 5; flex-shrink: 0;
@@ -90,22 +92,22 @@ body, html {
 
 .preview-text-wrapper {
     flex: 1; width: 100%; display: flex; justify-content: center; align-items: center;
-    overflow: hidden; padding: 10px 0;
+    overflow: hidden; padding: 15px 0; position: relative;
 }
 
 .preview-text-preview {
     writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl;
     font-family: inherit; line-height: 1.0; letter-spacing: 0.25em;
     font-weight: 500; color: #2b2b2b; white-space: nowrap !important; text-align: center;
-    max-height: 100%; display: block; margin: auto;
+    display: inline-block; margin: auto;
 }
 
-/* 📱 横画面（Landscape）対応：スクロール許可と最適化 */
+/* 📱 横画面（Landscape）対応：スクロール許可と領域確保 */
 @media screen and (orientation: landscape) {
     body, html { overflow: auto; }
-    .step-screen { position: relative; height: auto; min-height: 100vh; overflow-y: auto; }
-    .preview-container { min-height: 250px; }
-    .preview-text-preview { max-height: 200px; }
+    .step-screen { position: relative; height: auto; min-height: 100vh; overflow-y: auto; padding-bottom: 20px; }
+    .preview-container { min-height: 220px; flex: initial; width: 100%; }
+    .preview-text-wrapper { min-height: 160px; overflow-x: auto; }
 }
 
 /* 🔘 ボタンデザイン */
