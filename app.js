@@ -3,7 +3,7 @@ var SPREADSHEET_ID = '1m0y8AOJNx1Ad4I44poPheQAQNki1-QQIwi9wSw8jaBg';
 
 var kigoDatabase = [];
 var existingPhrases = []; 
-var existingAuthors = []; // 作者名重複・サジェスト用データセット
+var existingAuthors = []; 
 
 var autoDetectedParentKigo = '';
 var autoDetectedKigoKana = '';
@@ -23,6 +23,18 @@ var currentHaikuData = {
 var seasonMapToJa = { 'haru':'春', 'natsu':'夏', 'aki':'秋', 'huyu':'冬', 'shinnen':'新年', 'muki':'無季' };
 
 window.onload = function() {
+    // オフライン未送信通知バーの生成
+    createOfflineStatusBar();
+    checkAndSendPendingQueue();
+
+    // 通信復帰（オンライン化）時に自動で未送信キューを送信
+    window.addEventListener('online', function() {
+        checkAndSendPendingQueue();
+    });
+
+    // キャッシュ保存されたマスターデータの復元（オフライン時対応）
+    restoreCachedMasterData();
+
     try {
         var scriptKigo = document.createElement('script');
         var sheetKigoName = encodeURIComponent('歳時記データベース');
@@ -36,10 +48,13 @@ window.onload = function() {
     } catch (e) { console.error(e); }
 };
 
+// 歳時記データの受信＆ローカル保存
 function kigoDataReceived(data) {
     try {
         if (!data || !data.table || !data.table.rows) return;
         var rows = data.table.rows;
+        var tempKigoDb = [];
+
         for (var i = 0; i < rows.length; i++) {
             var c = rows[i].c;
             if (!c) continue;
@@ -59,7 +74,7 @@ function kigoDataReceived(data) {
             else if (sLower.indexOf('新年') !== -1 || sLower.indexOf('shinnen') !== -1) normalizedSeason = 'shinnen';
 
             if (childKigo || parentKigo) {
-                kigoDatabase.push({
+                tempKigoDb.push({
                     parentKigo: parentKigo,
                     childKigo: childKigo || parentKigo,
                     kigoKana: kigoKana,
@@ -68,14 +83,20 @@ function kigoDataReceived(data) {
                 });
             }
         }
+        if (tempKigoDb.length > 0) {
+            kigoDatabase = tempKigoDb;
+            localStorage.setItem('fugetsu_kigoDatabase', JSON.stringify(kigoDatabase));
+        }
     } catch (e) { console.error(e); }
 }
 
+// 既存句・作者データの受信＆ローカル保存
 function phrasesDataReceived(data) {
     try {
         if (!data || !data.table || !data.table.rows) return;
         var rows = data.table.rows;
         var authorMap = {};
+        var tempPhrases = [];
 
         for (var i = 0; i < rows.length; i++) {
             var c = rows[i].c;
@@ -83,7 +104,7 @@ function phrasesDataReceived(data) {
 
             if (c[0] && c[0].v) {
                 var phraseStr = String(c[0].v).trim();
-                if (phraseStr && phraseStr !== '句') existingPhrases.push(phraseStr);
+                if (phraseStr && phraseStr !== '句') tempPhrases.push(phraseStr);
             }
 
             var authorName = c[1] && c[1].v ? String(c[1].v).trim() : '';
@@ -96,31 +117,64 @@ function phrasesDataReceived(data) {
             }
         }
 
-        var nameDatalist = document.getElementById('authorList');
-        var kanaDatalist = document.getElementById('authorKanaList');
-        
-        for (var name in authorMap) {
-            var kana = authorMap[name];
-            existingAuthors.push({ name: name, kana: kana });
-            
-            if (nameDatalist) {
-                var opt = document.createElement('option');
-                opt.value = name;
-                nameDatalist.appendChild(opt);
+        if (tempPhrases.length > 0) {
+            existingPhrases = tempPhrases;
+            localStorage.setItem('fugetsu_existingPhrases', JSON.stringify(existingPhrases));
+        }
 
-                if (kana) {
-                    var optCombo = document.createElement('option');
-                    optCombo.value = name + ' (' + kana + ')';
-                    nameDatalist.appendChild(optCombo);
-                }
-            }
-            if (kanaDatalist && kana) {
-                var optK = document.createElement('option');
-                optK.value = kana;
-                kanaDatalist.appendChild(optK);
-            }
+        var tempAuthors = [];
+        for (var name in authorMap) {
+            tempAuthors.push({ name: name, kana: authorMap[name] });
+        }
+        if (tempAuthors.length > 0) {
+            existingAuthors = tempAuthors;
+            localStorage.setItem('fugetsu_existingAuthors', JSON.stringify(existingAuthors));
+            updateAuthorDatalists();
         }
     } catch (e) { console.error(e); }
+}
+
+// ローカルストレージからのマスターデータ読み込み（圏外時対策）
+function restoreCachedMasterData() {
+    try {
+        var cachedKigo = localStorage.getItem('fugetsu_kigoDatabase');
+        if (cachedKigo) kigoDatabase = JSON.parse(cachedKigo);
+
+        var cachedPhrases = localStorage.getItem('fugetsu_existingPhrases');
+        if (cachedPhrases) existingPhrases = JSON.parse(cachedPhrases);
+
+        var cachedAuthors = localStorage.getItem('fugetsu_existingAuthors');
+        if (cachedAuthors) {
+            existingAuthors = JSON.parse(cachedAuthors);
+            updateAuthorDatalists();
+        }
+    } catch (e) { console.error(e); }
+}
+
+function updateAuthorDatalists() {
+    var nameDatalist = document.getElementById('authorList');
+    var kanaDatalist = document.getElementById('authorKanaList');
+    if (!nameDatalist || !kanaDatalist) return;
+
+    nameDatalist.innerHTML = '';
+    kanaDatalist.innerHTML = '';
+
+    for (var i = 0; i < existingAuthors.length; i++) {
+        var item = existingAuthors[i];
+        var opt = document.createElement('option');
+        opt.value = item.name;
+        nameDatalist.appendChild(opt);
+
+        if (item.kana) {
+            var optCombo = document.createElement('option');
+            optCombo.value = item.name + ' (' + item.kana + ')';
+            nameDatalist.appendChild(optCombo);
+
+            var optK = document.createElement('option');
+            optK.value = item.kana;
+            kanaDatalist.appendChild(optK);
+        }
+    }
 }
 
 // カタカナ ➔ ひらがな変換
@@ -276,9 +330,7 @@ function goToStep2() {
                 }
             }
         }
-    } catch (e) {
-        console.error('重複チェックエラー（処理は継続します）:', e);
-    }
+    } catch (e) { console.error(e); }
 
     currentHaikuData.phrase = phrase;
 
@@ -320,9 +372,7 @@ function goToStep2() {
             document.getElementById('seasonSelect').value = 'muki';
             document.getElementById('detailSeasonInput').value = '';
         }
-    } catch (e) {
-        console.error(e);
-    }
+    } catch (e) { console.error(e); }
 
     goToStep(2);
 }
@@ -446,11 +496,23 @@ function adjustPreviewFontSize() {
     }
 }
 
+// 📡 オフライン対応：送信処理（圏外ならキュー保存）
 function submitHaiku() {
     var btn = document.getElementById('submitBtn');
     btn.disabled = true;
     btn.innerText = '送信中...';
 
+    // オフライン（圏外）の場合
+    if (!navigator.onLine) {
+        saveToPendingQueue(currentHaikuData);
+        btn.disabled = false;
+        btn.innerText = '登録';
+        alert('【オフライン一時保存】\n\n現在端末がオフラインのため、句を端末内に安全に一時保存しました。\n電波が繋がり次第、自動的にスプレッドシートへ送信されます。');
+        goToStep(4);
+        return;
+    }
+
+    // オンライン通信
     fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
@@ -463,14 +525,94 @@ function submitHaiku() {
         if (data.status === 'success') {
             goToStep(4);
         } else {
-            alert('送信に失敗しました：' + data.message);
+            // エラー時はローカル保存にフォールバック
+            saveToPendingQueue(currentHaikuData);
+            goToStep(4);
         }
     })
     .catch(function(err) {
         btn.disabled = false;
         btn.innerText = '登録';
+        // 通信失敗時もローカル保存して完了へ
+        saveToPendingQueue(currentHaikuData);
         goToStep(4);
     });
+}
+
+// 送信待ちキューの追加
+function saveToPendingQueue(dataObj) {
+    try {
+        var queue = getPendingQueue();
+        queue.push(dataObj);
+        localStorage.setItem('fugetsu_pendingQueue', JSON.stringify(queue));
+        updateOfflineStatusBar();
+    } catch (e) { console.error(e); }
+}
+
+// 未送信キューの取得
+function getPendingQueue() {
+    try {
+        var q = localStorage.getItem('fugetsu_pendingQueue');
+        return q ? JSON.parse(q) : [];
+    } catch (e) { return []; }
+}
+
+// オンライン復帰時の自動バックグラウンド一括送信
+function checkAndAndSendPendingQueue() {
+    if (!navigator.onLine) {
+        updateOfflineStatusBar();
+        return;
+    }
+
+    var queue = getPendingQueue();
+    if (queue.length === 0) {
+        updateOfflineStatusBar();
+        return;
+    }
+
+    var item = queue[0]; // 1件ずつ送信
+    fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(item)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function() {
+        var currentQ = getPendingQueue();
+        currentQ.shift(); // 送信成功したものをキューから削除
+        localStorage.setItem('fugetsu_pendingQueue', JSON.stringify(currentQ));
+        updateOfflineStatusBar();
+        if (currentQ.length > 0) {
+            checkAndSendPendingQueue(); // 残りを順次送信
+        }
+    })
+    .catch(function() {
+        updateOfflineStatusBar();
+    });
+}
+
+function checkAndSendPendingQueue() {
+    checkAndAndSendPendingQueue();
+}
+
+// 通知バーのUI追加＆更新
+function createOfflineStatusBar() {
+    var bar = document.createElement('div');
+    bar.id = 'offlineStatusBar';
+    bar.className = 'offline-status-bar';
+    document.body.appendChild(bar);
+}
+
+function updateOfflineStatusBar() {
+    var bar = document.getElementById('offlineStatusBar');
+    if (!bar) return;
+    var queue = getPendingQueue();
+    if (queue.length > 0) {
+        bar.innerText = '📡 未送信の句：' + queue.length + '件（電波接続時に自動送信）';
+        bar.style.display = 'block';
+    } else {
+        bar.style.display = 'none';
+    }
 }
 
 function resetForm() {
