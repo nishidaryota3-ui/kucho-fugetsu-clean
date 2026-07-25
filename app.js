@@ -21,18 +21,36 @@ var currentHaikuData = {
 };
 
 var seasonMapToJa = { 'haru':'春', 'natsu':'夏', 'aki':'秋', 'huyu':'冬', 'shinnen':'新年', 'muki':'無季' };
-var isSendingQueue = false; // 二重送信防止フラグ
+var isSendingQueue = false; 
 
 window.onload = function() {
     createOfflineStatusBar();
     restoreCachedMasterData();
 
-    // 起動時およびオンライン復帰時に未送信キューを送信
+    // 起動時の初期送信チェック
     setTimeout(checkAndSendPendingQueue, 1000);
 
+    // 📡 1. 電波復帰イベント（OS標準）
     window.addEventListener('online', function() {
         setTimeout(checkAndSendPendingQueue, 500);
     });
+
+    // 📱 2. 画面復帰・タップ時の自動再チェック
+    window.addEventListener('focus', function() {
+        checkAndSendPendingQueue();
+    });
+    document.addEventListener('touchstart', function() {
+        if (getPendingQueue().length > 0 && !isSendingQueue && navigator.onLine) {
+            checkAndSendPendingQueue();
+        }
+    }, { passive: true });
+
+    // ⏱️ 3. 未送信データがある場合のみ5秒おきに裏で自動ポーリング確認
+    setInterval(function() {
+        if (getPendingQueue().length > 0 && !isSendingQueue && navigator.onLine) {
+            checkAndSendPendingQueue();
+        }
+    }, 5000);
 
     try {
         var scriptKigo = document.createElement('script');
