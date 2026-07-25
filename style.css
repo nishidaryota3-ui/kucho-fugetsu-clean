@@ -121,3 +121,10 @@ body, html {
 .btn:active { transform: scale(0.98); }
 .btn-outline { background-color: transparent; color: #555; border: 1px solid #b5b5b5; }
 .btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+/* 📡 オフライン未送信ステータス通知バー */
+.offline-status-bar {
+    position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+    background: rgba(43, 43, 43, 0.9); color: #faf9f6; font-size: 0.75rem; letter-spacing: 0.08em;
+    padding: 6px 16px; border-radius: 20px; z-index: 100; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
