@@ -16,18 +16,16 @@ body, html {
 
 /* ステップ見出し */
 .step-title {
-    font-size: 0.85rem; color: #8c8476; letter-spacing: 0.15em; text-align: center; width: 100%;
-    padding-bottom: 5px; flex-shrink: 0;
+    font-size: 0.95rem; color: #8c8476; letter-spacing: 0.15em; text-align: center; width: 100%;
+    padding-bottom: 5px; flex-shrink: 0; font-weight: 500;
 }
 
-/* 🖋️ ステップ1：入力専用エリア（キーボード干渉防止の上部固定） */
+/* 🖋️ ステップ1：入力専用エリア（入力枠とボタンを上に寄せてキーボード干渉を防ぐ） */
 .input-screen-content {
     flex: 1; width: 100%; display: flex; flex-direction: column;
-    justify-content: flex-start; align-items: center; gap: 20px;
-    padding-top: 15px;
+    justify-content: flex-start; align-items: center; gap: 15px;
+    padding-top: 10px;
 }
-
-.bottom-spacer { flex-shrink: 0; height: 1px; }
 
 .input-dock {
     width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px;
@@ -62,14 +60,13 @@ body, html {
 }
 .text-input:focus { border-color: #2b2b2b; background: #fff; }
 
-/* 👁️ ステップ3：プレビュー枠（完全収容・縦書き厳密計算） */
+/* 👁️ ステップ3：プレビュー枠 */
 .preview-container {
     position: relative; width: 100%; flex: 1;
     display: flex; flex-direction: column; justify-content: space-between; align-items: center;
     overflow: hidden; padding: 0; margin: 5px 0;
 }
 
-/* 上下2段のヘッダー */
 .preview-header-area {
     width: 100%; display: flex; flex-direction: column; gap: 6px;
     padding: 0 5px; pointer-events: none; z-index: 5; flex-shrink: 0;
@@ -102,7 +99,7 @@ body, html {
     display: inline-block; margin: auto;
 }
 
-/* 📱 横画面（Landscape）対応：スクロール許可と領域確保 */
+/* 📱 横画面対応 */
 @media screen and (orientation: landscape) {
     body, html { overflow: auto; }
     .step-screen { position: relative; height: auto; min-height: 100vh; overflow-y: auto; padding-bottom: 20px; }
