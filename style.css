@@ -20,7 +20,7 @@ body, html {
     padding-bottom: 5px; flex-shrink: 0; font-weight: 500;
 }
 
-/* 🖋️ ステップ1：入力専用エリア（入力枠とボタンを上に寄せてキーボード干渉を防ぐ） */
+/* 🖋️ ステップ1：入力専用エリア */
 .input-screen-content {
     flex: 1; width: 100%; display: flex; flex-direction: column;
     justify-content: flex-start; align-items: center; gap: 15px;
@@ -60,36 +60,38 @@ body, html {
 }
 .text-input:focus { border-color: #2b2b2b; background: #fff; }
 
-/* 👁️ ステップ3：プレビュー枠 */
+/* 👁️ ステップ3：プレビュー枠（PC・スマホ画面自動最適化） */
 .preview-container {
-    position: relative; width: 100%; flex: 1;
+    position: relative; width: 100%; max-width: 900px; flex: 1;
     display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-    overflow: hidden; padding: 0; margin: 5px 0;
+    overflow: hidden; padding: 10px 0; margin: 5px 0;
 }
 
+/* 上部固定ヘッダー（パンくず＆作者名） */
 .preview-header-area {
     width: 100%; display: flex; flex-direction: column; gap: 6px;
-    padding: 0 5px; pointer-events: none; z-index: 5; flex-shrink: 0;
+    padding: 0 10px; pointer-events: none; z-index: 5; flex-shrink: 0;
 }
 
 .header-row-top { display: flex; justify-content: flex-start; width: 100%; }
 .header-row-bottom { display: flex; justify-content: flex-end; width: 100%; }
 
 .preview-breadcrumb {
-    font-size: 0.8rem; color: #666666; letter-spacing: 0.05em; 
+    font-size: 0.85rem; color: #666666; letter-spacing: 0.05em; 
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.3rem;
     text-align: left;
 }
 .preview-breadcrumb span.separator { color: #b5b5b5; font-family: sans-serif; }
 
 .preview-author-tag {
-    font-size: 0.95rem; color: #2b2b2b; letter-spacing: 0.1em; font-weight: 500;
+    font-size: 1.0rem; color: #2b2b2b; letter-spacing: 0.1em; font-weight: 500;
     white-space: nowrap; text-align: right;
 }
 
+/* 中央句表示エリア（画面サイズに応じて文字サイズが自動拡大） */
 .preview-text-wrapper {
     flex: 1; width: 100%; display: flex; justify-content: center; align-items: center;
-    overflow: hidden; padding: 15px 0; position: relative;
+    overflow: hidden; padding: 20px 0; position: relative;
 }
 
 .preview-text-preview {
@@ -97,14 +99,7 @@ body, html {
     font-family: inherit; line-height: 1.0; letter-spacing: 0.25em;
     font-weight: 500; color: #2b2b2b; white-space: nowrap !important; text-align: center;
     display: inline-block; margin: auto;
-}
-
-/* 📱 横画面対応 */
-@media screen and (orientation: landscape) {
-    body, html { overflow: auto; }
-    .step-screen { position: relative; height: auto; min-height: 100vh; overflow-y: auto; padding-bottom: 20px; }
-    .preview-container { min-height: 220px; flex: initial; width: 100%; }
-    .preview-text-wrapper { min-height: 160px; overflow-x: auto; }
+    font-size: clamp(2rem, 5vh, 3.5rem); /* スマホ〜PC画面に合わせて美しい大きさに自動調整 */
 }
 
 /* 🔘 ボタンデザイン */
@@ -119,9 +114,8 @@ body, html {
 .btn-outline { background-color: transparent; color: #555; border: 1px solid #b5b5b5; }
 .btn:disabled { background-color: #ccc; cursor: not-allowed; }
 
-/* 📡 オフライン未送信ステータス通知バー */
-.offline-status-bar {
-    position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-    background: rgba(43, 43, 43, 0.9); color: #faf9f6; font-size: 0.75rem; letter-spacing: 0.08em;
-    padding: 6px 16px; border-radius: 20px; z-index: 100; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+/* 📱 横画面・デスクトップ最適化 */
+@media screen and (min-width: 768px) {
+    .preview-container { height: 70vh; }
+    .kigo-check-card { width: 450px; }
 }
