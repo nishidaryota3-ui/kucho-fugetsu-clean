@@ -87,22 +87,24 @@
         </div>
     </div>
 
-    <!-- 👁️ ステップ3：プレビュー・確認画面 -->
+    <!-- 👁️ ステップ3：登録プレビュー（「おみ句じ ＆ 季寄せ」と完全に同じ配置・構造） -->
     <div id="step3" class="step-screen">
         <div class="step-title">【三】 登録プレビュー</div>
         
-        <div class="preview-container">
-            <div class="preview-header-area">
-                <div class="header-row-top">
-                    <div id="previewBreadcrumb" class="preview-breadcrumb"></div>
-                </div>
-                <div class="header-row-bottom">
-                    <div id="previewAuthor" class="preview-author-tag"></div>
-                </div>
+        <!-- ヘッダーエリア（パンくず＆作者名） -->
+        <div class="global-header-area">
+            <div class="header-row-top">
+                <div id="previewBreadcrumb" class="breadcrumb"></div>
             </div>
+            <div class="header-row-bottom">
+                <div id="previewAuthor" class="info-upper-tag"></div>
+            </div>
+        </div>
 
-            <div id="previewTextWrapper" class="preview-text-wrapper">
-                <div id="previewPhrase" class="preview-text-preview"></div>
+        <!-- 句表示メインエリア（季寄せと同仕様：.phrase クラス） -->
+        <div class="preview-screen-content">
+            <div class="haiku-screen">
+                <div id="previewPhrase" class="phrase"></div>
             </div>
         </div>
 
