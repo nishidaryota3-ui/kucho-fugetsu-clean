@@ -1,149 +1,122 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <!-- アプリ名・タイトル指定 -->
-    <title>おみ句じ句帳 - 風月</title>
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="句帳 風月">
-    <meta name="application-name" content="句帳 風月">
-    <meta name="theme-color" content="#faf9f6">
-    
-    <!-- アプリアイコン指定 -->
-    <link rel="icon" type="image/png" sizes="192x192" href="icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
-    <link rel="manifest" href="manifest.json">
+/* 画面全体の初期化 */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body, html {
+    background-color: #faf9f6; color: #2b2b2b;
+    font-family: "游明朝", "Yu Mincho", "ヒラギノ明朝 ProN", "Hiragino Mincho ProN", "Shippori Mincho", "MS P明朝", serif;
+    overflow: hidden; height: 100%; width: 100%;
+    user-select: none; -webkit-user-select: none;
+}
 
-    <!-- デザインファイル読み込み -->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+/* 各ステップ画面共通 */
+.step-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; flex-direction: column; justify-content: space-between; align-items: center;
+    padding: calc(15px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));
+}
+.step-screen.active { display: flex !important; }
 
-    <!-- 🖋️ ステップ1：句の入力画面 -->
-    <div id="step1" class="step-screen active">
-        <div class="step-title">【一】 句の入力</div>
-        <div class="input-screen-content">
-            <div class="input-dock">
-                <input type="text" id="inputPhrase" class="dock-input" placeholder="ここに一句入力してください" autocomplete="off" autofocus>
-            </div>
-            <div class="btn-group">
-                <button class="btn" onclick="goToStep2()">次へ（季語確認）</button>
-            </div>
-        </div>
-    </div>
+/* ステップ見出し */
+.step-title {
+    font-size: 0.95rem; color: #8c8476; letter-spacing: 0.15em; text-align: center; width: 100%;
+    padding-bottom: 5px; flex-shrink: 0; font-weight: 500; z-index: 40;
+}
 
-    <!-- 🏷️ ステップ2：季語・作者確認画面 -->
-    <div id="step2" class="step-screen">
-        <div class="step-title">【二】 季語・作者の確認</div>
-        <div class="step2-content">
-            <div class="kigo-check-card">
-                <div class="kigo-prompt">
-                    自動検出された季語<br>
-                    <div id="detectedKigoText" style="margin-top: 5px; font-weight: bold;"></div>
-                </div>
+/* 🖋️ ステップ1：入力画面 */
+.input-screen-content {
+    flex: 1; width: 100%; display: flex; flex-direction: column;
+    justify-content: flex-start; align-items: center; gap: 15px;
+    padding-top: 10px;
+}
 
-                <div class="form-group" style="margin-top: 15px;">
-                    <label class="form-label">季語（親季語）</label>
-                    <input type="text" id="kigoInput" class="text-input" placeholder="例：酉の市、桜" onblur="checkAndHokanKigoData()">
-                </div>
+.input-dock {
+    width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 12px;
+    background: #ffffff; border: 1px solid #eae8e3; border-radius: 12px;
+    padding: 18px 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+}
 
-                <div class="form-group">
-                    <label class="form-label">季節</label>
-                    <select id="seasonSelect" class="text-input">
-                        <option value="haru">春</option>
-                        <option value="natsu">夏</option>
-                        <option value="aki">秋</option>
-                        <option value="huyu">冬</option>
-                        <option value="shinnen">新年</option>
-                        <option value="muki">無季</option>
-                    </select>
-                </div>
+.dock-input {
+    width: 100%; border: none; outline: none; font-size: 1.1rem;
+    font-family: inherit; background: transparent; color: #2b2b2b;
+    padding: 8px 0; border-bottom: 1px solid #ddd;
+}
 
-                <div class="form-group">
-                    <label class="form-label">詳細季節</label>
-                    <select id="detailSeasonSelect" class="text-input">
-                        <option value="">（選択なし）</option>
-                        <option value="新年">新年</option>
-                        <option value="初春">初春</option>
-                        <option value="仲春">仲春</option>
-                        <option value="晩春">晩春</option>
-                        <option value="三春">三春</option>
-                        <option value="初夏">初夏</option>
-                        <option value="仲夏">仲夏</option>
-                        <option value="晩夏">晩夏</option>
-                        <option value="三夏">三夏</option>
-                        <option value="初秋">初秋</option>
-                        <option value="仲秋">仲秋</option>
-                        <option value="晩秋">晩秋</option>
-                        <option value="三秋">三秋</option>
-                        <option value="初冬">初冬</option>
-                        <option value="仲冬">仲冬</option>
-                        <option value="晩冬">晩冬</option>
-                        <option value="三冬">三冬</option>
-                        <option value="暮">暮</option>
-                    </select>
-                </div>
+/* 🏷️ ステップ2：季語・作者確認画面 */
+.step2-content {
+    flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%;
+    overflow-y: auto; padding: 10px 0;
+}
+.kigo-check-card {
+    background: #ffffff; border: 1px solid #eae8e3; border-radius: 8px;
+    padding: 20px 20px; width: 85vw; max-width: 400px; text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+.kigo-prompt { font-size: 1.05rem; color: #2b2b2b; margin-bottom: 0.8rem; line-height: 1.6; }
+.kigo-prompt span { font-weight: bold; border-bottom: 1px solid #2b2b2b; padding-bottom: 2px; }
 
-                <div class="form-group" style="margin-top: 15px; border-top: 1px dashed #ddd; padding-top: 10px;">
-                    <label class="form-label">作者名</label>
-                    <input type="text" id="authorInput" class="text-input" list="authorList" placeholder="西田亮太" oninput="onAuthorInputChanged()" onchange="onAuthorNameChange()">
-                    <datalist id="authorList"></datalist>
-                </div>
+.form-group { margin-top: 0.8rem; text-align: left; }
+.form-label { font-size: 0.8rem; color: #777; margin-bottom: 0.2rem; display: block; }
+.text-input {
+    width: 100%; padding: 8px 10px; font-size: 0.95rem; font-family: inherit;
+    border: 1px solid #ccc; border-radius: 4px; outline: none; background: #faf9f6;
+}
+.text-input:focus { border-color: #2b2b2b; background: #fff; }
 
-                <div class="form-group">
-                    <label class="form-label">作者名（よみがな）</label>
-                    <input type="text" id="authorKanaInput" class="text-input" list="authorKanaList" placeholder="にしだりょうた" oninput="onAuthorKanaInputChanged()">
-                    <datalist id="authorKanaList"></datalist>
-                </div>
-            </div>
-        </div>
-        <div class="btn-group">
-            <button class="btn btn-outline" onclick="goToStep(1)">戻る</button>
-            <button class="btn" onclick="goToStep3()">プレビューへ</button>
-        </div>
-    </div>
+/* 👁️ ステップ3：プレビュー領域 */
+.preview-screen-content {
+    position: relative; flex: 1; width: 100%;
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden;
+}
 
-    <!-- 👁️ ステップ3：登録プレビュー -->
-    <div id="step3" class="step-screen">
-        <div class="step-title">【三】 登録プレビュー</div>
-        
-        <div class="global-header-area">
-            <div class="header-row-top">
-                <div id="previewBreadcrumb" class="breadcrumb"></div>
-            </div>
-            <div class="header-row-bottom">
-                <div id="previewAuthor" class="info-upper-tag"></div>
-            </div>
-        </div>
+/* 🧭 グローバルヘッダー */
+.global-header-area {
+    position: absolute;
+    top: calc(15px + env(safe-area-inset-top));
+    left: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 30;
+    pointer-events: none;
+}
 
-        <div class="preview-screen-content">
-            <div class="haiku-screen">
-                <div id="previewPhrase" class="phrase"></div>
-            </div>
-        </div>
+.header-row-top { display: flex; justify-content: flex-start; width: 100%; }
+.header-row-bottom { display: flex; justify-content: flex-end; align-items: center; width: 100%; min-height: 24px; }
 
-        <div class="btn-group">
-            <button class="btn btn-outline" onclick="goToStep(2)">修正する</button>
-            <button id="submitBtn" class="btn" onclick="submitHaiku()">登録する</button>
-        </div>
-    </div>
+.breadcrumb {
+    font-size: 0.82rem; color: #666666; letter-spacing: 0.05em;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.4rem;
+    line-height: 1.3; pointer-events: auto; max-width: 100%;
+}
+.breadcrumb span.separator { color: #b5b5b5; font-family: sans-serif; }
 
-    <!-- 🎉 ステップ4：完了画面 -->
-    <div id="step4" class="step-screen">
-        <div class="step2-content" style="text-align: center;">
-            <h2 style="font-size: 1.4rem; color: #2b2b2b; margin-bottom: 10px; font-weight: 500;">登録が完了しました</h2>
-            <p style="font-size: 0.9rem; color: #666; line-height: 1.6;">句帳（スプレッドシート）へ保存されました。</p>
-        </div>
-        <div class="btn-group">
-            <button class="btn" onclick="resetForm()">続けて次の句を入力</button>
-        </div>
-    </div>
+.info-upper-tag {
+    font-size: 0.95rem; color: #2b2b2b; letter-spacing: 0.05em; font-weight: 500;
+    white-space: nowrap; text-align: right; pointer-events: auto;
+    display: flex; flex-direction: column; align-items: flex-end;
+}
 
-    <!-- プログラムファイル読み込み -->
-    <script src="app.js"></script>
-</body>
-</html>
+.haiku-screen { 
+    height: 100%; width: 100%; display: flex; 
+    justify-content: center; align-items: center; flex-direction: column; 
+}
+
+.phrase {
+    writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl;
+    font-size: 3.2vh; line-height: 1.0;
+    letter-spacing: 0.3em; font-weight: 500; white-space: nowrap; 
+    text-align: center; display: block;
+}
+
+/* 🔘 ボタンデザイン */
+.btn-group { display: flex; gap: 12px; justify-content: center; width: 100%; max-width: 400px; z-index: 40; flex-shrink: 0; }
+.btn {
+    flex: 1; padding: 12px 0; font-size: 0.95rem; font-family: inherit; letter-spacing: 0.15em;
+    color: #faf9f6; background-color: #2b2b2b; border: none; border-radius: 25px;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s; user-select: none;
+    white-space: nowrap; text-align: center;
+}
+.btn:active { transform: scale(0.98); }
+.btn-outline { background-color: transparent; color: #555; border: 1px solid #b5b5b5; }
+.btn:disabled { background-color: #ccc; cursor: not-allowed; }
