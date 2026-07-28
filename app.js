@@ -21,16 +21,10 @@ window.onload = function() {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
 
-    // キャッシュからの即時復元
     restoreCachedMasterData();
-
-    // 1段階目：一番左「俳句集成」のマスターデータを取得
     fetchPrimaryMasterData();
-
-    // 2段階目：3番目「歳時記データベース」のマスターデータをバックグラウンド取得
     fetchSecondaryMasterData();
 
-    // オフライン未送信キューの自動送信チェック
     window.addEventListener('online', processOfflineQueue);
     processOfflineQueue();
 };
@@ -52,7 +46,6 @@ function restoreCachedMasterData() {
     }
 }
 
-/* 1段階目：一番左「俳句集成」の取得 */
 function fetchPrimaryMasterData() {
     const script = document.createElement('script');
     script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?range=A:I&tqx=responseHandler:primaryDataReceived`;
@@ -72,12 +65,12 @@ window.primaryDataReceived = function(data) {
 
             const getVal = (idx) => (c[idx] && c[idx].v !== null) ? String(c[idx].v).trim() : '';
             
-            const author = getVal(1);      // B列: 作者名
-            const authorKana = getVal(2);  // C列: 作者よみがな
-            const kigo = getVal(3);        // D列: 季語
-            const parentKigo = getVal(4);  // E列: 親季語
-            const detailSeason = getVal(6);// G列: 詳細季節
-            const season = getVal(7).toLowerCase(); // H列: 季節
+            const author = getVal(1);
+            const authorKana = getVal(2);
+            const kigo = getVal(3);
+            const parentKigo = getVal(4);
+            const detailSeason = getVal(6);
+            const season = getVal(7).toLowerCase();
 
             if (kigo && kigo !== '季語' && kigo !== '句') {
                 kigoList.push({
@@ -95,7 +88,6 @@ window.primaryDataReceived = function(data) {
             }
         }
 
-        // 重複排除
         let uniqueMap = {};
         kigoList.forEach(item => { if (!uniqueMap[item.kigo]) uniqueMap[item.kigo] = item; });
         primaryKigoDatabase = Object.values(uniqueMap);
@@ -115,7 +107,6 @@ window.primaryDataReceived = function(data) {
     }
 };
 
-/* 2段階目：3番目「歳時記データベース」の取得 */
 function fetchSecondaryMasterData() {
     const sheetName = encodeURIComponent('歳時記データベース');
     const script = document.createElement('script');
@@ -140,6 +131,7 @@ window.secondaryDataReceived = function(data) {
             const parentKigo = getVal(3);           // D列: 親季語
             const childKigo = getVal(5);            // F列: 子季語
 
+            // 子季語（F列）エントリー
             if (childKigo && childKigo !== '子季語') {
                 kigoList.push({
                     kigo: childKigo,
@@ -148,6 +140,7 @@ window.secondaryDataReceived = function(data) {
                     detailSeason: detailSeason
                 });
             }
+            // 親季語（D列）エントリー
             if (parentKigo && parentKigo !== '親季語' && parentKigo !== childKigo) {
                 kigoList.push({
                     kigo: parentKigo,
@@ -168,7 +161,6 @@ window.secondaryDataReceived = function(data) {
     }
 };
 
-/* あいうえお順のドロップダウンリスト生成 */
 function updateAuthorDatalist() {
     const authorListEl = document.getElementById('authorList');
     if (!authorListEl) return;
@@ -182,7 +174,6 @@ function updateAuthorDatalist() {
     });
 }
 
-/* 画面遷移制御 */
 function goToStep(stepNumber) {
     document.querySelectorAll('.step-screen').forEach(el => el.classList.remove('active'));
     const target = document.getElementById(`step${stepNumber}`);
@@ -198,32 +189,27 @@ function goToStep2() {
 
     currentHaikuData.phrase = phraseInput;
 
-    // 2段階自動季語検出を実行
     detectKigo(phraseInput);
     goToStep(2);
 }
 
-/* 🔍 2段階検索ロジック（①俳句集成 → ②歳時記DB） */
+/* 🔍 強化された季語自動検出機能（最長一致＆2段階判定） */
 function detectKigo(phrase) {
     let detected = null;
 
-    // 第1優先：既存の俳句集成から検索（長い単語を優先）
-    let sortedPrimary = [...primaryKigoDatabase].sort((a, b) => b.kigo.length - a.kigo.length);
-    for (let item of sortedPrimary) {
-        if (phrase.includes(item.kigo)) {
-            detected = item;
-            break;
-        }
-    }
+    // 句の文字列を整理（空白等の除去）
+    const cleanPhrase = phrase.replace(/\s+/g, '');
 
-    // 第2優先：ヒットしなかった場合、9,000語の歳時記データベースを検索
-    if (!detected) {
-        let sortedSecondary = [...secondaryKigoDatabase].sort((a, b) => b.kigo.length - a.kigo.length);
-        for (let item of sortedSecondary) {
-            if (phrase.includes(item.kigo)) {
-                detected = item;
-                break;
-            }
+    // 全データベース（第1優先＆第2優先）をまとめて文字数の長い順にソート（例：「熊手市」＞「熊手」）
+    let allKigo = [...primaryKigoDatabase, ...secondaryKigoDatabase];
+    
+    // 重複を排除しつつ長い季語を優先
+    let sortedKigo = allKigo.sort((a, b) => b.kigo.length - a.kigo.length);
+
+    for (let item of sortedKigo) {
+        if (cleanPhrase.includes(item.kigo)) {
+            detected = item;
+            break; // 一番長い一致でストップ（「熊手市」が「熊手」より優先される）
         }
     }
 
@@ -236,7 +222,7 @@ function detectKigo(phrase) {
 
         promptEl.innerText = `${displayPrompt} [${getSeasonNameJa(detected.season)}]`;
         
-        // 画面の入力欄には「親季語」をセット
+        // 画面の入力欄には親季語をセット
         document.getElementById('kigoInput').value = detected.parentKigo;
         document.getElementById('seasonSelect').value = detected.season || 'haru';
         document.getElementById('detailSeasonInput').value = detected.detailSeason || '';
@@ -257,7 +243,6 @@ function checkAndHokanKigoData() {
     const val = document.getElementById('kigoInput').value.trim();
     if (!val) return;
 
-    // 2段階で補完検索
     let hit = primaryKigoDatabase.find(item => item.kigo === val || item.parentKigo === val);
     if (!hit) {
         hit = secondaryKigoDatabase.find(item => item.kigo === val || item.parentKigo === val);
@@ -296,7 +281,6 @@ function onAuthorKanaInputChanged() {
 function goToStep3() {
     const inputKigoVal = document.getElementById('kigoInput').value.trim();
     
-    // 入力・調整された親季語から構造を再確認
     let hit = primaryKigoDatabase.find(item => item.kigo === inputKigoVal || item.parentKigo === inputKigoVal);
     if (!hit) {
         hit = secondaryKigoDatabase.find(item => item.kigo === inputKigoVal || item.parentKigo === inputKigoVal);
@@ -309,11 +293,9 @@ function goToStep3() {
     currentHaikuData.author = document.getElementById('authorInput').value.trim() || '西田亮太';
     currentHaikuData.authorKana = document.getElementById('authorKanaInput').value.trim();
 
-    // プレビュー画面の反映
     document.getElementById('previewPhrase').innerText = currentHaikuData.phrase;
     document.getElementById('previewAuthor').innerText = currentHaikuData.author;
 
-    // パンくず生成
     let seasonJa = getSeasonNameJa(currentHaikuData.season);
     let kigoStr = currentHaikuData.parentKigo || '無季';
     let detailSuffix = currentHaikuData.detailSeason ? `（${currentHaikuData.detailSeason}）` : '';
@@ -324,21 +306,19 @@ function goToStep3() {
     goToStep(3);
 }
 
-/* スプレッドシート送信＆オフライン対応 */
 function submitHaiku() {
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
     submitBtn.innerText = '送信中...';
 
-    // 一番左「俳句集成」の列構成に合わせてデータを送信
     const payload = {
-        phrase: currentHaikuData.phrase,                            // A列: 俳句
-        author: currentHaikuData.author,                            // B列: 作者名
-        authorKana: currentHaikuData.authorKana,                    // C列: 作者よみがな
-        kigo: currentHaikuData.kigo || currentHaikuData.parentKigo, // D列: 季語（子季語/表記）
-        parentKigo: currentHaikuData.parentKigo,                  // E列: 親季語
-        detailSeason: currentHaikuData.detailSeason,                // G列: 詳細季節（初夏、三秋など）
-        season: currentHaikuData.season,                            // H列: 季節（haru, akiなど）
+        phrase: currentHaikuData.phrase,
+        author: currentHaikuData.author,
+        authorKana: currentHaikuData.authorKana,
+        kigo: currentHaikuData.kigo || currentHaikuData.parentKigo,
+        parentKigo: currentHaikuData.parentKigo,
+        detailSeason: currentHaikuData.detailSeason,
+        season: currentHaikuData.season,
         timestamp: new Date().toISOString()
     };
 
