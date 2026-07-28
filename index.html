@@ -36,7 +36,7 @@
         </div>
     </div>
 
-    <!-- 🏷️ ステップ2：季語・季節確認画面 -->
+    <!-- 🏷️ ステップ2：季語・作者確認画面 -->
     <div id="step2" class="step-screen">
         <div class="step-title">【二】 季語・作者の確認</div>
         <div class="step2-content">
@@ -48,7 +48,7 @@
 
                 <div class="form-group" style="margin-top: 15px;">
                     <label class="form-label">季語（親季語）</label>
-                    <input type="text" id="kigoInput" class="text-input" placeholder="例：古池、桜" onblur="checkAndHokanKigoData()">
+                    <input type="text" id="kigoInput" class="text-input" placeholder="例：酉の市、桜" onblur="checkAndHokanKigoData()">
                 </div>
 
                 <div class="form-group">
@@ -65,7 +65,27 @@
 
                 <div class="form-group">
                     <label class="form-label">詳細季節</label>
-                    <input type="text" id="detailSeasonInput" class="text-input" placeholder="例：初夏、晩春など">
+                    <select id="detailSeasonSelect" class="text-input">
+                        <option value="">（選択なし）</option>
+                        <option value="新年">新年</option>
+                        <option value="初春">初春</option>
+                        <option value="仲春">仲春</option>
+                        <option value="晩春">晩春</option>
+                        <option value="三春">三春</option>
+                        <option value="初夏">初夏</option>
+                        <option value="仲夏">仲夏</option>
+                        <option value="晩夏">晩夏</option>
+                        <option value="三夏">三夏</option>
+                        <option value="初秋">初秋</option>
+                        <option value="仲秋">仲秋</option>
+                        <option value="晩秋">晩秋</option>
+                        <option value="三秋">三秋</option>
+                        <option value="初冬">初冬</option>
+                        <option value="仲冬">仲冬</option>
+                        <option value="晩冬">晩冬</option>
+                        <option value="三冬">三冬</option>
+                        <option value="暮">暮</option>
+                    </select>
                 </div>
 
                 <div class="form-group" style="margin-top: 15px; border-top: 1px dashed #ddd; padding-top: 10px;">
