@@ -1,6 +1,6 @@
 // スプレッドシートID
 const SPREADSHEET_ID = '1m0y8AOJNx1Ad4I44poPheQAQNki1-QQIwi9wSw8jaBg';
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzI8q03lIuD3NnEshN8g-q44q6lV9XkR9239q9-sX0xX/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwgm4eh8qZGRxvFS8_b8iEJAC9vRGw31gOvjgsPQMPc1ymU4oKonErvUkL0Ucf6xnZO/exec';
 
 let saijikiDatabase = []; // 3枚目：歳時記データベース（季語照会用）
 let authorDatabase = [];  // 1枚目：俳句集成（作者サジェスト用）
@@ -310,7 +310,6 @@ function submitHaiku() {
     submitBtn.disabled = true;
     submitBtn.innerText = '送信中...';
 
-    // 完璧な列対応データをGASへ送信
     const payload = {
         phrase: currentHaikuData.phrase,                            // A列
         author: currentHaikuData.author,                            // B列
