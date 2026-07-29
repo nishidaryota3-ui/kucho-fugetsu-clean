@@ -1,17 +1,22 @@
-// スプレッドシートID
+// ① 「風月」自身のスプレッドシートID（1枚目「俳句集成」・登録用）
 const SPREADSHEET_ID = '1m0y8AOJNx1Ad4I44poPheQAQNki1-QQIwi9wSw8jaBg';
+
+// ② 共通の「歳時記データベース」専用スプレッドシートID（独立マスターを参照）
+const SAIJIKI_SPREADSHEET_ID = '1EOmZn53hFA8GpVdcn--aU-lj9uHjGQpnSZ1o9jbnsYs';
+
+// Webアプリ（GAS）のURL
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwgm4eh8qZGRxvFS8_b8iEJAC9vRGw31gOvjgsPQMPc1ymU4oKonErvUkL0Ucf6xnZO/exec';
 
-let saijikiDatabase = []; // 3枚目：歳時記データベース（季語照会用）
-let authorDatabase = [];  // 1枚目：俳句集成（作者サジェスト用）
+let saijikiDatabase = []; // 共通：歳時記データベース（季語照会用）
+let authorDatabase = [];  // 風月独自：俳句集成（作者サジェスト用）
 
 let currentHaikuData = {
     phrase: '',
-    kigo: '',         // D列用: 子季語/表記季語（熊手市）
-    parentKigo: '',   // E列用: 親季語（酉の市）
-    parentKana: '',   // F列用: 季語よみがな（とりのいち）
-    season: 'haru',   // G列用: 季節コード（huyu）
-    detailSeason: '', // H列用: 詳細季節（初冬）
+    kigo: '',         // D列用: 子季語/表記季語
+    parentKigo: '',   // E列用: 親季語
+    parentKana: '',   // F列用: 季語よみがな
+    season: 'haru',   // G列用: 季節コード
+    detailSeason: '', // H列用: 詳細季節
     author: '',
     authorKana: ''
 };
@@ -22,7 +27,11 @@ window.onload = function() {
     }
 
     restoreCachedMasterData();
+    
+    // 自身（風月）の1枚目「俳句集成」から作者データを取得
     fetchAuthorMasterData();
+
+    // 独立した共通スプレッドシートから季語データを取得
     fetchSaijikiMasterData();
 
     window.addEventListener('online', processOfflineQueue);
@@ -44,6 +53,7 @@ function restoreCachedMasterData() {
     }
 }
 
+/* 1枚目「俳句集成」（風月側）から作者データ取得 */
 function fetchAuthorMasterData() {
     const script = document.createElement('script');
     script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?range=A:C&tqx=responseHandler:authorDataReceived`;
@@ -84,10 +94,12 @@ window.authorDataReceived = function(data) {
     }
 };
 
+/* 🌐 独立した「歳時記データベース」スプレッドシートから季語データを共通取得 */
 function fetchSaijikiMasterData() {
     const sheetName = encodeURIComponent('歳時記データベース');
     const script = document.createElement('script');
-    script.src = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?sheet=${sheetName}&range=A:F&tqx=responseHandler:saijikiDataReceived`;
+    // SAIJIKI_SPREADSHEET_ID を使用
+    script.src = `https://docs.google.com/spreadsheets/d/${SAIJIKI_SPREADSHEET_ID}/gviz/tq?sheet=${sheetName}&range=A:F&tqx=responseHandler:saijikiDataReceived`;
     document.body.appendChild(script);
 }
 
@@ -103,11 +115,11 @@ window.saijikiDataReceived = function(data) {
 
             const getVal = (idx) => (c[idx] && c[idx].v !== null) ? String(c[idx].v).trim() : '';
             
-            const rawSeason = getVal(0);            // A列: 季節 (例: huyu)
-            const detailSeason = getVal(1);         // B列: 詳細季節 (例: 初冬)
-            const parentKigo = getVal(2);           // C列: 親季語 (例: 酉の市)
-            const parentKana = getVal(3);           // D列: 親季語よみがな (例: とりのいち)
-            const childKigo = getVal(4);            // E列: 子季語 (例: 熊手市)
+            const rawSeason = getVal(0);            // A列: 季節
+            const detailSeason = getVal(1);         // B列: 詳細季節
+            const parentKigo = getVal(2);           // C列: 親季語
+            const parentKana = getVal(3);           // D列: 親季語よみがな
+            const childKigo = getVal(4);            // E列: 子季語
 
             const seasonCode = parseSeasonCode(rawSeason);
 
@@ -311,14 +323,14 @@ function submitHaiku() {
     submitBtn.innerText = '送信中...';
 
     const payload = {
-        phrase: currentHaikuData.phrase,                            // A列
-        author: currentHaikuData.author,                            // B列
-        authorKana: currentHaikuData.authorKana,                    // C列
-        kigo: currentHaikuData.kigo || currentHaikuData.parentKigo, // D列
-        parentKigo: currentHaikuData.parentKigo,                  // E列
-        parentKana: currentHaikuData.parentKana,                    // F列
-        season: currentHaikuData.season,                            // G列
-        detailSeason: currentHaikuData.detailSeason,                // H列
+        phrase: currentHaikuData.phrase,
+        author: currentHaikuData.author,
+        authorKana: currentHaikuData.authorKana,
+        kigo: currentHaikuData.kigo || currentHaikuData.parentKigo,
+        parentKigo: currentHaikuData.parentKigo,
+        parentKana: currentHaikuData.parentKana,
+        season: currentHaikuData.season,
+        detailSeason: currentHaikuData.detailSeason,
         timestamp: new Date().toISOString()
     };
 
